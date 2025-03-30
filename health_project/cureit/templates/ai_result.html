@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OptimaCare – AI Medical Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to right, #f0f4f8, #e8f0fe);
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            max-width: 700px;
+            margin: auto;
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        h1 {
+            color: #0066cc;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .label {
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+            margin-top: 25px;
+            margin-bottom: 5px;
+        }
+
+        .urgency {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 30px;
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+        }
+
+        .emergency { background-color: #dc3545; }
+        .see { background-color: #ffc107; color: #000; }
+        .self { background-color: #28a745; }
+
+        a.button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        a.button:hover {
+            opacity: 0.9;
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-top: 8px;
+        }
+
+        iframe {
+            border: 0;
+            border-radius: 12px;
+            width: 100%;
+            height: 300px;
+            margin-top: 15px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>OptimaCare Diagnosis</h1>
+
+        <div class="section">
+            <div class="label">Your Input:</div>
+            <div>{{ symptoms }}</div>
+        </div>
+
+        <div class="section">
+            <div class="label">Possible Conditions:</div>
+            <ul>
+                {% for c in conditions %}
+                    <li>{{ c }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="label">Urgency Level:</div>
+            <span class="urgency 
+                {% if urgency == 'emergency' %}emergency
+                {% elif 'doctor' in urgency %}see
+                {% else %}self{% endif %}">
+                {{ urgency|capfirst }}
+            </span>
+        </div>
+
+        <div class="section">
+            <div class="label">Recommended Doctor:</div>
+            <div>{{ doctor }}</div>
+        </div>
+
+        <div class="section">
+            <div class="label">Suggested Medication:</div>
+            <ul>
+                {% for m in medication %}
+                    <li>{{ m }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="section">
+            <div class="label">Advice:</div>
+            <div>{{ advice }}</div>
+        </div>
+
+        <div class="section">
+            <div class="label">Nearby <strong>{{ doctor }}</strong> Locations:</div>
+            <iframe
+                src="https://www.google.com/maps?q={{ doctor|urlencode }}+near+me&output=embed"
+                allowfullscreen
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
+        </div>
+
+        <!-- SMART ACTION BUTTON BASED ON URGENCY -->
+        <div class="section">
+            <div class="label">Suggested Action:</div>
+            {% if urgency == 'emergency' %}
+                <a class="button" style="background-color:#dc3545;" href="tel:911">🚨 Call Emergency Services</a>
+                <p style="margin-top:10px;">Please go to the nearest emergency department immediately.</p>
+            {% elif 'doctor' in urgency %}
+                <a class="button" style="background-color:#17a2b8;" href="https://www.google.com/maps/search/{{ doctor|urlencode }}+clinic+near+me" target="_blank">🩺 Find a {{ doctor }}</a>
+            {% else %}
+                <a class="button" style="background-color:#28a745;" href="https://www.healthline.com/health/home-remedies" target="_blank">🏡 View Self-Care Tips</a>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="label">📧 Would you like to receive your results by email?</div>
+            <button type="button" class="button" onclick="showEmailForm()">Yes, Email Me</button>
+            <button type="button" class="button" style="background:#ccc; color:#333;" onclick="hideEmailForm()">No, thanks</button>
+        
+            <form method="post" action="/send-email/" id="emailForm" style="display:none; margin-top: 20px;">
+                {% csrf_token %}
+                <input type="hidden" name="symptoms" value="{{ symptoms }}">
+                <input type="hidden" name="conditions" value="{{ conditions|join:", " }}">
+                <input type="hidden" name="urgency" value="{{ urgency }}">
+                <input type="hidden" name="doctor" value="{{ doctor }}">
+                <input type="hidden" name="medication" value="{{ medication|join:", " }}">
+                <input type="hidden" name="advice" value="{{ advice }}">
+                <input type="email" name="email" placeholder="Enter your email address" required
+                       style="padding:10px;width:70%;border-radius:8px;border:1px solid #ccc;">
+                <button type="submit" class="button" style="margin-left:10px;">Send</button>
+            </form>
+        </div>
+        
+        <script>
+            function showEmailForm() {
+                document.getElementById("emailForm").style.display = "block";
+            }
+        
+            function hideEmailForm() {
+                document.getElementById("emailForm").style.display = "none";
+            }
+        </script>
+        
+        <a href="/" class="button">🔁 Check Another Symptom</a>
+    </div>
+</body>
+</html>
